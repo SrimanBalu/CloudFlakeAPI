@@ -12,6 +12,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Add Dependency Injection
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 
 // Add services to the container.
 builder.Services.AddControllers();

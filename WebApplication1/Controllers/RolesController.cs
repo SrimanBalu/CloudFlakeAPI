@@ -1,96 +1,32 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.DTOs;
-using WebApplication1.Models;
 using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class EmployeesController : ControllerBase
+    public class RolesController : ControllerBase
     {
-        private readonly IEmployeeService _employeeService;
-        private readonly ILogger<EmployeesController> _logger;
+        private readonly IRoleService _roleService;
+        private readonly ILogger<RolesController> _logger;
 
-        public EmployeesController(IEmployeeService employeeService, ILogger<EmployeesController> logger)
+        public RolesController(IRoleService roleService, ILogger<RolesController> logger)
         {
-            _employeeService = employeeService;
+            _roleService = roleService;
             _logger = logger;
         }
 
         /// <summary>
-        /// Get all active employees with their roles
+        /// Get all roles
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<IEnumerable<EmployeeResponseDto>>>> GetAllEmployees()
+        public async Task<ActionResult<ApiResponse<IEnumerable<RoleDto>>>> GetAllRoles()
         {
             try
             {
-                var employees = await _employeeService.GetAllEmployeesAsync();
-                return Ok(new ApiResponse<IEnumerable<EmployeeResponseDto>>
-                {
-                    Success = true,
-                    Message = "Employees retrieved successfully",
-                    Data = employees
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving employees");
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "Error retrieving employees"
-                });
-            }
-        }
-
-        /// <summary>
-        /// Get employee by ID with role
-        /// </summary>
-        [HttpGet("{id}")]
-        public async Task<ActionResult<ApiResponse<EmployeeResponseDto>>> GetEmployeeById(int id)
-        {
-            try
-            {
-                var employee = await _employeeService.GetEmployeeByIdAsync(id);
-                if (employee == null)
-                {
-                    return NotFound(new ApiResponse<object>
-                    {
-                        Success = false,
-                        Message = "Employee not found"
-                    });
-                }
-
-                return Ok(new ApiResponse<EmployeeResponseDto>
-                {
-                    Success = true,
-                    Message = "Employee retrieved successfully",
-                    Data = employee
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving employee by ID");
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "Error retrieving employee"
-                });
-            }
-        }
-
-        /// <summary>
-        /// Get all roles for dropdown
-        /// </summary>
-        [HttpGet("roles")]
-        public async Task<ActionResult<ApiResponse<IEnumerable<Role>>>> GetAllRoles()
-        {
-            try
-            {
-                var roles = await _employeeService.GetAllRolesAsync();
-                return Ok(new ApiResponse<IEnumerable<Role>>
+                var roles = await _roleService.GetAllRolesAsync();
+                return Ok(new ApiResponse<IEnumerable<RoleDto>>
                 {
                     Success = true,
                     Message = "Roles retrieved successfully",
@@ -109,10 +45,73 @@ namespace WebApplication1.Controllers
         }
 
         /// <summary>
-        /// Add a new employee with role and password
+        /// Get all roles with employee count
+        /// </summary>
+        [HttpGet("with-count")]
+        public async Task<ActionResult<ApiResponse<IEnumerable<RoleWithEmployeeCountDto>>>> GetAllRolesWithCount()
+        {
+            try
+            {
+                var roles = await _roleService.GetAllRolesWithEmployeeCountAsync();
+                return Ok(new ApiResponse<IEnumerable<RoleWithEmployeeCountDto>>
+                {
+                    Success = true,
+                    Message = "Roles with employee count retrieved successfully",
+                    Data = roles
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving roles with count");
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Error retrieving roles"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get role by ID
+        /// </summary>
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ApiResponse<RoleDto>>> GetRoleById(int id)
+        {
+            try
+            {
+                var role = await _roleService.GetRoleByIdAsync(id);
+                if (role == null)
+                {
+                    return NotFound(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Role not found"
+                    });
+                }
+
+                return Ok(new ApiResponse<RoleDto>
+                {
+                    Success = true,
+                    Message = "Role retrieved successfully",
+                    Data = role
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving role by ID");
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Error retrieving role"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Create a new role
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<ApiResponse<EmployeeResponseDto>>> AddEmployee([FromBody] EmployeeDto employeeDto)
+        public async Task<ActionResult<ApiResponse<RoleDto>>> CreateRole([FromBody] CreateRoleDto createRoleDto)
         {
             try
             {
@@ -121,12 +120,12 @@ namespace WebApplication1.Controllers
                     return BadRequest(new ApiResponse<object>
                     {
                         Success = false,
-                        Message = "Invalid employee data",
+                        Message = "Invalid role data",
                         Data = ModelState.Values.SelectMany(v => v.Errors)
                     });
                 }
 
-                var (success, message, addedEmployee) = await _employeeService.AddEmployeeAsync(employeeDto);
+                var (success, message, role) = await _roleService.CreateRoleAsync(createRoleDto);
 
                 if (!success)
                 {
@@ -137,29 +136,29 @@ namespace WebApplication1.Controllers
                     });
                 }
 
-                return CreatedAtAction(nameof(GetEmployeeById), new { id = addedEmployee!.Id }, new ApiResponse<EmployeeResponseDto>
+                return CreatedAtAction(nameof(GetRoleById), new { id = role!.Id }, new ApiResponse<RoleDto>
                 {
                     Success = true,
                     Message = message,
-                    Data = addedEmployee
+                    Data = role
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding employee");
+                _logger.LogError(ex, "Error creating role");
                 return StatusCode(500, new ApiResponse<object>
-                { 
+                {
                     Success = false,
-                    Message = "Error adding employee"
+                    Message = "Error creating role"
                 });
             }
         }
 
         /// <summary>
-        /// Update an employee (password update is optional)
+        /// Update a role
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<ActionResult<ApiResponse<EmployeeResponseDto>>> UpdateEmployee(int id, [FromBody] EmployeeUpdateDto employeeUpdateDto)
+        public async Task<ActionResult<ApiResponse<RoleDto>>> UpdateRole(int id, [FromBody] UpdateRoleDto updateRoleDto)
         {
             try
             {
@@ -168,16 +167,16 @@ namespace WebApplication1.Controllers
                     return BadRequest(new ApiResponse<object>
                     {
                         Success = false,
-                        Message = "Invalid employee data",
+                        Message = "Invalid role data",
                         Data = ModelState.Values.SelectMany(v => v.Errors)
                     });
                 }
 
-                var (success, message, updatedEmployee) = await _employeeService.UpdateEmployeeAsync(id, employeeUpdateDto);
+                var (success, message, role) = await _roleService.UpdateRoleAsync(id, updateRoleDto);
 
                 if (!success)
                 {
-                    if (message == "Employee not found")
+                    if (message == "Role not found")
                     {
                         return NotFound(new ApiResponse<object>
                         {
@@ -193,33 +192,33 @@ namespace WebApplication1.Controllers
                     });
                 }
 
-                return Ok(new ApiResponse<EmployeeResponseDto>
+                return Ok(new ApiResponse<RoleDto>
                 {
                     Success = true,
                     Message = message,
-                    Data = updatedEmployee
+                    Data = role
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating employee");
+                _logger.LogError(ex, "Error updating role");
                 return StatusCode(500, new ApiResponse<object>
                 {
                     Success = false,
-                    Message = "Error updating employee"
+                    Message = "Error updating role"
                 });
             }
         }
 
         /// <summary>
-        /// Delete an employee (soft delete - sets IsActive to false)
+        /// Delete a role (only if no employees are assigned)
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<ActionResult<ApiResponse<object>>> DeleteEmployee(int id)
+        public async Task<ActionResult<ApiResponse<object>>> DeleteRole(int id)
         {
             try
             {
-                var (success, message) = await _employeeService.DeleteEmployeeAsync(id);
+                var (success, message) = await _roleService.DeleteRoleAsync(id);
 
                 if (!success)
                 {
@@ -238,11 +237,11 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting employee");
+                _logger.LogError(ex, "Error deleting role");
                 return StatusCode(500, new ApiResponse<object>
                 {
                     Success = false,
-                    Message = "Error deleting employee"
+                    Message = "Error deleting role"
                 });
             }
         }

@@ -19,4 +19,27 @@ namespace WebApplication1.DTOs
         public string Message { get; set; } = string.Empty;
         public string? Token { get; set; }
     }
+
+    public class CreateRoleDto
+    {
+        public string RoleName { get; set; } = string.Empty;
+    }
+
+    public class UpdateRoleDto
+    {
+        public string RoleName { get; set; } = string.Empty;
+    }
+
+    public class RoleDto
+    {
+        public int Id { get; set; }
+        public string RoleName { get; set; } = string.Empty;
+    }
+
+    public class RoleWithEmployeeCountDto
+    {
+        public int Id { get; set; }
+        public string RoleName { get; set; } = string.Empty;
+        public int EmployeeCount { get; set; }
+    }
 }
