@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.DTOs;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
@@ -7,62 +8,60 @@ namespace WebApplication1.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
+        private readonly IEmployeeService _employeeService;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(ILogger<AuthController> logger)
+        public AuthController(IEmployeeService employeeService, ILogger<AuthController> logger)
         {
+            _employeeService = employeeService;
             _logger = logger;
         }
 
         /// <summary>
-        /// Login with username and password
+        /// Login with email and password
         /// </summary>
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public async Task<ActionResult<ApiResponse<EmployeeLoginDetailsDto>>> Login([FromBody] LoginDto loginRequest)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+                if (!ModelState.IsValid)
                 {
-                    return BadRequest(new LoginResponse
+                    return BadRequest(new ApiResponse<object>
                     {
                         Success = false,
-                        Message = "Username and password are required"
+                        Message = "Invalid login request",
+                        Data = ModelState.Values.SelectMany(v => v.Errors)
                     });
                 }
 
-                // Simple authentication check
-                if (request.Username == "admin" && request.Password == "1234")
+                var (success, message, employee) = await _employeeService.LoginAsync(loginRequest);
+
+                if (!success)
                 {
-                    return Ok(new LoginResponse
+                    return Unauthorized(new ApiResponse<object>
                     {
-                        Success = true,
-                        Message = "Login successful",
-                        Token = GenerateSimpleToken()
+                        Success = false,
+                        Message = message
                     });
                 }
 
-                return BadRequest(new LoginResponse
+                return Ok(new ApiResponse<EmployeeLoginDetailsDto>
                 {
-                    Success = false,
-                    Message = "Invalid username or password"
+                    Success = true,
+                    Message = message,
+                    Data = employee
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during login");
-                return StatusCode(500, new LoginResponse
+                return StatusCode(500, new ApiResponse<object>
                 {
                     Success = false,
                     Message = "Error during login"
                 });
             }
-        }
-
-        private string GenerateSimpleToken()
-        {
-            // Simple token generation (in production, use JWT)
-            return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"admin:{DateTime.UtcNow:O}"));
         }
     }
 }

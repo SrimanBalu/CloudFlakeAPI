@@ -27,7 +27,16 @@ namespace WebApplication1.Models
         [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone must be exactly 10 digits")]
         public string Phone { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Password is required")]
+        [StringLength(255, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters")]
+        public string Password { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+
+        // Navigation property
+        public ICollection<EmployeeRole> EmployeeRoles { get; set; } = new List<EmployeeRole>();
     }
 }
